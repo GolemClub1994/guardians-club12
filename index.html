@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elemental Guardians Club — Quantum cNFT Edition</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+  window.ownerId = "6FbqngMY397oBym4KCtQPyxM8sW9yMmJwH8A5boCG6F3";
+  window.collectionId = "cHadKMJbpSOacf4u1VpE";
+</script>
+<script type="module" src="https://storage.googleapis.com/scriptslmt/0.1.3/solana.js"></script>
+<link rel="stylesheet" href="https://storage.googleapis.com/scriptslmt/0.1.3/solana.css">
+
+<script>
+  const HELIUS_KEY   = "942d346c-8719-4e12-af59-ee66f700e48d";
+  const HELIUS_RPC   = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_KEY}`;
+  const CREATOR      = "6FbqngMY397oBym4KCtQPyxM8sW9yMmJwH8A5boCG6F3";
+  const COLLECTION_ID = "cHadKMJbpSOacf4u1VpE";
+  const TOTAL_SUPPLY = 375;
+  const IMG_BASE     = `https://we-assets.pinit.io/${CREATOR}/5932c8a9-801d-47e3-ad4d-5ae4f5beb6dd`;
+</script>
+
+<style>
+:root {
+  --neon-cyan:   #00ffff;
+  --plasma:      #bf00ff;
+  --plasma-c:    #e040fb;
+  --legendary-a: #ffd700;
+  --cyber-grid:  rgba(160,0,255,0.055);
+  --bg-color:    #05000a;
+  --ca:          #00f0ff;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Rajdhani',sans-serif;
+  background:var(--bg-color);color:#fff;
+  min-height:100vh;overflow-x:hidden;position:relative;
+  transition:background 2s ease-in-out;
+}
+body.theme-gold{
+  --neon-cyan:#ffd700;--plasma:#ffaa00;--plasma-c:#fff5cc;
+  --cyber-grid:rgba(255,170,0,0.15);--bg-color:#0f0a00;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(90deg,var(--cyber-grid) 1px,transparent 1px),
+             linear-gradient(0deg,var(--cyber-grid) 1px,transparent 1px);
+  background-size:50px 50px;animation:gridMove 20s linear infinite;transition:background 2s;
+}
+@keyframes gridMove{to{background-position:50px 50px}}
+body::after{
+  content:'';position:fixed;inset:0;z-index:10;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);
+}
+
+/* THREE.JS CONTAINER */
+#webgl-container {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 50; pointer-events: none;
+  opacity: 0; transition: opacity 0.5s;
+}
+#particleCanvas{position:fixed;inset:0;z-index:1;pointer-events:none;}
+
+/* OVERLAYS */
+#explosionFlash{position:fixed;inset:0;z-index:10000;background:#fff;opacity:0;display:none;pointer-events:none;transition:opacity 0.15s;}
+#blackout{position:fixed;inset:0;z-index:9999;background:#000;opacity:0;display:none;pointer-events:none;transition:opacity 1.4s ease-in-out;}
+
+/* ALREADY MINTED OVERLAY */
+#mintedOverlay{display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.93);align-items:center;justify-content:center;flex-direction:column;}
+#mintedOverlay.show{display:flex;animation:fadeIn 0.4s forwards;}
+.minted-box{
+  border:2px solid #ff2255;border-radius:20px;padding:44px 50px;
+  background:rgba(10,0,20,0.99);
+  box-shadow:0 0 80px rgba(255,34,85,0.5),inset 0 0 40px rgba(255,34,85,0.1);
+  max-width:420px;text-align:center;
+  animation:mintedPop 0.5s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+@keyframes mintedPop{from{transform:scale(0.7) translateY(60px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.minted-icon{font-size:64px;margin-bottom:14px;}
+.minted-title{font-family:'Orbitron';font-size:20px;font-weight:900;color:#ff2255;letter-spacing:3px;text-transform:uppercase;text-shadow:0 0 25px #ff2255;margin-bottom:8px;}
+.minted-num{font-family:'Orbitron';font-size:52px;font-weight:900;color:#ff2255;display:block;margin:10px 0;text-shadow:0 0 30px #ff2255;}
+.minted-sub{font-family:'Share Tech Mono';font-size:11px;color:#888;letter-spacing:2px;margin-bottom:28px;line-height:1.7;}
+.btn-close-minted{background:none;border:2px solid #ff2255;color:#ff2255;font-family:'Orbitron';font-size:11px;letter-spacing:3px;padding:13px 30px;border-radius:10px;cursor:pointer;transition:all 0.3s;}
+.btn-close-minted:hover{background:rgba(255,34,85,0.18);box-shadow:0 0 25px #ff2255;color:#fff;}
+
+/* CINEMATIC SHAKE */
+.cinematic-shake{animation:violentShake 0.08s infinite;}
+@keyframes violentShake{0%{transform:translate(0,0)}25%{transform:translate(-8px,8px) rotate(-0.5deg)}50%{transform:translate(8px,-8px) rotate(0.5deg)}75%{transform:translate(-8px,-8px) rotate(-0.3deg)}100%{transform:translate(8px,8px) rotate(0.3deg)}}
+
+/* CHARGE BAR */
+#chargeBar{position:fixed;top:0;left:0;width:0;height:3px;background:linear-gradient(90deg,#00ffff,#bf00ff,#ffd700);z-index:9998;pointer-events:none;transition:width 0.35s ease-out,opacity 0.5s;box-shadow:0 0 10px var(--neon-cyan),0 0 20px var(--plasma);}
+
+/* INPUT ENERGY */
+.input-box.charging{animation:inputCharge 0.4s ease-out;border-color:var(--neon-cyan)!important;box-shadow:0 0 40px rgba(0,255,255,0.5),0 0 80px rgba(191,0,255,0.3)!important;}
+@keyframes inputCharge{0%{transform:scale(1)}30%{transform:scale(1.025);box-shadow:0 0 60px rgba(0,255,255,0.7)}100%{transform:scale(1)}}
+.input-box.vibe{animation:microVibe 0.25s ease-out;}
+@keyframes microVibe{0%,100%{transform:translateX(0)}20%{transform:translateX(-3px)}40%{transform:translateX(3px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
+
+/* HEADER */
+#app{position:relative;z-index:2;padding-bottom:80px;}
+header{text-align:center;padding:40px 20px 8px;}
+.header-tag{font-family:'Share Tech Mono';color:var(--plasma-c);font-size:10px;letter-spacing:4px;margin-bottom:8px;}
+h1{font-family:'Orbitron';font-size:clamp(20px,5vw,40px);font-weight:900;background:linear-gradient(135deg,var(--neon-cyan),var(--plasma-c),var(--legendary-a),var(--plasma),var(--neon-cyan));background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:gradShift 4s ease infinite;}
+@keyframes gradShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+#mint-counter{font-family:'Share Tech Mono';font-size:14px;margin:14px auto 0;display:inline-block;padding:7px 22px;border:1px solid var(--neon-cyan);border-radius:30px;color:var(--neon-cyan);box-shadow:0 0 20px rgba(0,255,255,0.15);letter-spacing:2px;animation:counterPulse 2s ease-in-out infinite;}
+@keyframes counterPulse{0%,100%{box-shadow:0 0 10px rgba(0,255,255,0.15)}50%{box-shadow:0 0 30px rgba(0,255,255,0.45)}}
+
+/* CONTROLS */
+.controls{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:28px;padding-bottom:40px;}
+.input-box{background:rgba(5,0,15,0.9);border:2px solid var(--plasma);border-radius:12px;padding:14px 22px;width:310px;transition:border-color 0.3s,box-shadow 0.3s,transform 0.2s;position:relative;}
+.input-box:focus-within{border-color:var(--neon-cyan);box-shadow:0 0 20px rgba(0,255,255,0.2);}
+.input-box label{display:block;font-family:'Share Tech Mono';font-size:9px;color:var(--plasma-c);letter-spacing:3px;text-transform:uppercase;margin-bottom:5px;}
+.input-box input{background:none;border:none;color:var(--neon-cyan);font-family:'Orbitron';font-size:18px;font-weight:700;width:100%;outline:none;}
+.input-box input::placeholder{color:rgba(0,255,255,0.25);font-size:12px;font-weight:400;}
+#dynamicMsg{font-family:'Share Tech Mono';font-size:11px;color:var(--neon-cyan);letter-spacing:1px;min-height:18px;text-align:center;}
+.btn-reveal{width:310px;padding:18px;background:linear-gradient(135deg,#4a00e0,#8e2de2,#ff00ff,#4a00e0);background-size:300% 300%;animation:plasmaFlow 2s ease infinite;border:none;color:#fff;font-family:'Orbitron';font-weight:900;font-size:13px;letter-spacing:4px;border-radius:12px;cursor:pointer;box-shadow:0 0 25px var(--plasma);transition:transform 0.2s,box-shadow 0.2s;position:relative;overflow:hidden;}
+@keyframes plasmaFlow{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.btn-reveal::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent);transform:translateX(-100%);animation:shimmer 2.5s infinite;}
+@keyframes shimmer{to{transform:translateX(100%)}}
+.btn-reveal:hover{transform:translateY(-2px);box-shadow:0 0 50px var(--plasma),0 10px 25px rgba(0,0,0,0.4);}
+
+/* CARD SCENE */
+.scene{position:relative;z-index:200;width:340px;perspective:1000px;margin:28px auto 0;display:none;}
+.card-wrap{width:340px;transform-style:preserve-3d;transition:transform 0.08s ease-out;will-change:transform;}
+.card{width:340px;border-radius:20px;position:relative;overflow:hidden;background:rgba(0,0,0,.95);border:2px solid var(--ca);box-shadow:0 0 40px var(--ca),0 0 80px rgba(0,0,0,0.8);transition:box-shadow 0.3s;}
+.card::after{content:'';position:absolute;inset:0;background:linear-gradient(125deg,transparent 35%,rgba(255,255,255,0.18) 45%,rgba(255,255,255,0.38) 50%,rgba(255,255,255,0.18) 55%,transparent 65%);background-size:250% 250%;background-position:100% 100%;pointer-events:none;z-index:5;mix-blend-mode:screen;transition:background-position 0.1s;}
+.card::before{content:'';position:absolute;inset:0;background:linear-gradient(var(--holo-angle,135deg),rgba(255,0,128,0) 0%,rgba(255,0,128,0.05) 20%,rgba(0,255,255,0.08) 40%,rgba(128,0,255,0.05) 60%,rgba(255,200,0,0.05) 80%,rgba(255,0,128,0) 100%);pointer-events:none;z-index:4;mix-blend-mode:color-dodge;transition:all 0.1s;}
+.img-frame{width:280px;height:280px;margin:30px auto 16px;border-radius:15px;overflow:hidden;border:3px solid var(--ca);background:#000;position:relative;box-shadow:0 0 30px var(--ca);transition:box-shadow 0.2s;}
+.img-frame img{width:100%;height:100%;object-fit:cover;animation:guardianBreathe 3.5s ease-in-out infinite; opacity: 0; /* Hidden initially for WebGL */}
+@keyframes guardianBreathe{0%,100%{transform:scale(1);filter:brightness(1) saturate(1)}40%{transform:scale(1.06);filter:brightness(1.12) saturate(1.2)}70%{transform:scale(1.03);filter:brightness(1.06) saturate(1.1)}}
+.img-frame.talking img{animation:guardianTalk 0.18s ease-in-out infinite alternate!important;}
+@keyframes guardianTalk{from{transform:scale(1.02);filter:brightness(1.05) saturate(1.1)}to{transform:scale(1.07);filter:brightness(1.18) saturate(1.3)}}
+.img-frame.talking{animation:talkingRing 0.2s ease-in-out infinite alternate;}
+@keyframes talkingRing{from{box-shadow:0 0 30px var(--ca),0 0 60px var(--ca)}to{box-shadow:0 0 60px var(--ca),0 0 120px var(--ca),0 0 180px rgba(255,255,255,0.2)}}
+.card-body{padding:0 20px 22px;text-align:center;}
+.badge-rarity{font-family:'Orbitron';font-size:10px;letter-spacing:6px;margin-bottom:6px;color:var(--ca);animation:badgePulse 2s ease-in-out infinite;}
+@keyframes badgePulse{0%,100%{opacity:1;text-shadow:0 0 10px var(--ca)}50%{opacity:0.7;text-shadow:0 0 30px var(--ca),0 0 50px var(--ca)}}
+.gname{font-family:'Orbitron';font-size:17px;color:var(--ca);margin-bottom:12px;text-shadow:0 0 15px var(--ca);}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:16px;}
+.stat{background:rgba(255,255,255,0.04);padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);}
+.stat span{display:block;font-family:'Share Tech Mono';font-size:9px;color:var(--plasma-c);letter-spacing:2px;}
+.stat b{font-family:'Orbitron';font-size:20px;color:var(--ca);}
+.guardian-speech{background:rgba(0,0,0,0.6);border:1px solid var(--ca);border-radius:10px;padding:10px 14px;margin:10px 0;font-family:'Share Tech Mono';font-size:11px;color:var(--plasma-c);line-height:1.6;min-height:52px;text-align:left;position:relative;animation:speechFadeIn 0.5s ease;}
+@keyframes speechFadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.guardian-speech::before{content:'💬';position:absolute;top:-10px;left:12px;font-size:14px;}
+
+/* MINT SECTION */
+.mint-section{width:340px;margin:20px auto 0;display:none;}
+.btn-mint-lmn{width:100%;padding:17px;background:linear-gradient(135deg,#ff6b00,#ff0090);border:none;color:#fff;font-family:'Orbitron';font-weight:900;font-size:12px;letter-spacing:3px;border-radius:12px;cursor:pointer;box-shadow:0 0 30px rgba(255,0,144,0.5);animation:mintPulse 2s ease-in-out infinite;transition:transform 0.2s;text-decoration:none;display:block;text-align:center;line-height:1.4;}
+@keyframes mintPulse{0%,100%{box-shadow:0 0 20px rgba(255,0,144,0.4)}50%{box-shadow:0 0 55px rgba(255,0,144,0.8),0 0 80px rgba(255,107,0,0.4)}}
+.btn-mint-lmn:hover{transform:translateY(-3px);}
+.verify-section{margin-top:16px;background:rgba(5,0,15,0.9);border:1px solid rgba(0,255,255,0.2);border-radius:12px;padding:18px;}
+.verify-section p{font-family:'Share Tech Mono';font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:10px;letter-spacing:1px;}
+.verify-input{background:rgba(0,0,0,0.5);border:1px solid var(--plasma);border-radius:8px;padding:10px;color:var(--neon-cyan);font-family:'Share Tech Mono';font-size:10px;width:100%;outline:none;margin-bottom:10px;transition:border-color 0.3s,box-shadow 0.3s;}
+.verify-input:focus{border-color:var(--neon-cyan);box-shadow:0 0 15px rgba(0,255,255,0.3);}
+.verify-input::placeholder{color:rgba(255,255,255,0.2);}
+.btn-verify{width:100%;padding:13px;background:rgba(191,0,255,0.2);border:1px solid var(--plasma);color:var(--plasma-c);font-family:'Orbitron';font-size:11px;letter-spacing:2px;border-radius:8px;cursor:pointer;transition:all 0.3s;}
+.btn-verify:hover{background:rgba(191,0,255,0.4);box-shadow:0 0 20px var(--plasma);}
+.btn-verify:disabled{opacity:0.5;cursor:wait;}
+#verifyStatus{font-family:'Share Tech Mono';font-size:10px;text-align:center;margin-top:8px;min-height:16px;letter-spacing:1px;}
+.status-ok{color:#00ff88;}.status-err{color:#ff4444;}.status-check{color:var(--neon-cyan);animation:blink 1s infinite;}
+@keyframes blink{50%{opacity:0.4}}
+#verifiedBadge{display:none;text-align:center;font-family:'Orbitron';font-size:11px;color:#00ff88;letter-spacing:3px;margin:10px 0;text-shadow:0 0 15px #00ff88;animation:verifiedGlow 2s ease-in-out infinite;}
+@keyframes verifiedGlow{0%,100%{text-shadow:0 0 10px #00ff88}50%{text-shadow:0 0 35px #00ff88,0 0 65px #00ff88}}
+
+/* CERT SECTION */
+.cert-section{width:340px;margin:16px auto 40px;display:none;}
+.action-row{display:flex;gap:10px;justify-content:center;}
+.cert-btn{background:rgba(0,0,0,0.7);border:1px solid var(--ca);color:var(--ca);font-family:'Orbitron';font-size:10px;padding:11px 18px;border-radius:8px;cursor:pointer;transition:all 0.3s;flex:1;text-align:center;}
+.cert-btn:hover{background:rgba(0,0,0,0.9);box-shadow:0 0 18px var(--ca);}
+.btn-unlocked{background:gold!important;color:#000!important;font-weight:900;border:none!important;box-shadow:0 0 30px gold!important;animation:tremor 0.2s infinite alternate,glowPulse 1.5s infinite alternate;}
+@keyframes tremor{from{transform:translate(1px,1px)}to{transform:translate(-1px,-1px)}}
+@keyframes glowPulse{from{box-shadow:0 0 10px gold}to{box-shadow:0 0 50px gold}}
+
+/* PREVIEW MODAL */
+#previewModal{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99000;display:none;align-items:center;justify-content:center;flex-direction:column;padding:20px;}
+#previewCanvas{max-width:90%;max-height:75vh;border:2px solid gold;box-shadow:0 0 60px gold;}
+
+/* CHAIN CELLS */
+.chain-cell{position:fixed;bottom:-50px;width:14px;height:14px;background:rgba(255,215,0,0.1);border:1px solid var(--neon-cyan);box-shadow:0 0 10px var(--neon-cyan);border-radius:3px;pointer-events:none;z-index:100;animation:levitateCell linear forwards;}
+@keyframes levitateCell{0%{transform:translateY(0) rotate(0deg) scale(0.5);opacity:0}10%{opacity:1;transform:translateY(-10vh) rotate(45deg) scale(1)}100%{transform:translateY(-110vh) rotate(360deg) scale(0.2);opacity:0}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+@media(max-width:380px){
+  .card-wrap,.card,.mint-section,.cert-section,.input-box,.btn-reveal{width:300px;}
+  .img-frame{width:240px;height:240px;}
+}
+</style>
+</head>
+<body>
+
+<div id="explosionFlash"></div>
+<div id="blackout"></div>
+
+<div id="webgl-container"></div>
+
+<div id="mintedOverlay">
+  <div class="minted-box">
+    <div class="minted-icon">🔒</div>
+    <div class="minted-title">NFT ALREADY MINTED</div>
+    <span class="minted-num" id="mintedNum">#000</span>
+    <div class="minted-sub">This Guardian has already been claimed<br>by another Commander.<br><br>Choose a different ID between 1 and 375.</div>
+    <button class="btn-close-minted" onclick="closeMintedOverlay()">← CHOOSE ANOTHER</button>
+  </div>
+</div>
+
+<div id="chargeBar"></div>
+<canvas id="particleCanvas"></canvas>
+
+<div id="previewModal" onclick="this.style.display='none'">
+  <canvas id="previewCanvas" width="800" height="1100"></canvas>
+  <p style="margin-top:15px;font-family:'Orbitron';color:gold;font-size:12px;letter-spacing:3px;">CLICK ANYWHERE TO CLOSE</p>
+</div>
+
+<div id="app">
+  <header id="mainHeader">
+    <p class="header-tag">⚡ SOLANA · EGC · cNFT PROTOCOL ⚡</p>
+    <h1>ELEMENTAL GUARDIANS</h1>
+    <div id="mint-counter">⟳ LOADING DATA...</div>
+  </header>
+
+  <div id="setup-ui" class="controls">
+    <div class="input-box" id="boxName">
+      <label>⚡ YOUR COMMANDER NAME</label>
+      <input id="userName" type="text" placeholder="Enter your name" maxlength="20" autocomplete="off">
+    </div>
+    <div class="input-box" id="boxNum">
+      <label>🔢 GUARDIAN ID (1 – 375)</label>
+      <input id="nftNum" type="number" min="1" max="375" placeholder="1 – 375" autocomplete="off">
+    </div>
+    <p id="dynamicMsg"></p>
+    <button class="btn-reveal" onclick="triggerAwakening()">⚡ FORGE GUARDIAN</button>
+  </div>
+
+  <div class="scene" id="scene">
+    <div class="card-wrap" id="cardWrap">
+      <div class="card" id="cardContainer">
+        <div class="img-frame" id="imgFrame">
+          <img id="cardImg" crossorigin="anonymous" src="" alt="Guardian">
+        </div>
+        <div class="card-body" id="cardBodyUI" style="opacity: 0;">
+          <div class="badge-rarity" id="badgeRarity">COMMON</div>
+          <div class="gname" id="gname">GUARDIAN UNIT</div>
+          <div class="stats">
+            <div class="stat"><span>ATK</span><b id="atk">—</b></div>
+            <div class="stat"><span>DEF</span><b id="def">—</b></div>
+            <div class="stat"><span>DAO</span><b id="dao">—</b></div>
+          </div>
+          <div class="guardian-speech" id="guardianSpeech">Initializing neural link...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mint-section" id="mintSection">
+    
+    <div style="margin-bottom: 20px; text-align: center;">
+      <div id="mint-button-container"></div>
+    </div>
+
+    <div class="verify-section" id="verifySection">
+      <p>▸ ALREADY MINTED? PASTE YOUR SOLANA WALLET TO UNLOCK THE CERTIFICATE</p>
+      <input class="verify-input" id="walletInput" type="text" placeholder="Your Solana wallet (e.g. 5Xf3...)" maxlength="48">
+      <button class="btn-verify" id="verifyBtn" onclick="verifyOwnership()">🔍 VERIFY OWNERSHIP</button>
+      <div id="verifyStatus"></div>
+      <div id="verifiedBadge">✅ VERIFIED · GUARDIAN BOND CONFIRMED</div>
+    </div>
+  </div>
+
+  <div class="cert-section" id="certSection">
+    <div class="action-row">
+      <button class="cert-btn" onclick="showPreview()">🔍 PREVIEW CARD</button>
+      <button id="dlCertBtn" class="cert-btn" onclick="downloadCert()">🔒 MINT TO UNLOCK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── STATE ── */
+let currentRarity='common',commanderName='Commander',currentId=1;
+let mintVerified=false,mintedSet=new Set(),mintedLoaded=false;
+let chargeLevel=0,speechTO=null,audioCtx=null,chargeOsc=null,chargeGain=null;
+
+/* ── THREE.JS GLOBALS ── */
+let glScene, glCamera, glRenderer, cardMesh, particleSys, glUniforms;
+
+/* ── AUDIO ── */
+function initAudio(){
+  if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==='suspended') audioCtx.resume();
+}
+function playKeyClick(){
+  try{
+    initAudio();
+    const t=audioCtx.currentTime,osc=audioCtx.createOscillator(),gain=audioCtx.createGain(),flt=audioCtx.createBiquadFilter();
+    osc.type='square';
+    osc.frequency.setValueAtTime(80+chargeLevel*10,t);
+    osc.frequency.exponentialRampToValueAtTime(240+chargeLevel*15,t+0.07);
+    flt.type='bandpass';flt.frequency.value=700;flt.Q.value=2;
+    gain.gain.setValueAtTime(0.09,t);gain.gain.exponentialRampToValueAtTime(0.001,t+0.1);
+    osc.connect(flt);flt.connect(gain);gain.connect(audioCtx.destination);
+    osc.start(t);osc.stop(t+0.1);
+  }catch(e){}
+}
+
+/* TONE INCREASING SINC WITH TYPING */
+let btnTween = null;
+function startChargeHum(){
+  try{
+    initAudio();if(chargeOsc)return;
+    chargeOsc=audioCtx.createOscillator();chargeGain=audioCtx.createGain();
+    const lfo=audioCtx.createOscillator(),lfoG=audioCtx.createGain(),flt=audioCtx.createBiquadFilter();
+    chargeOsc.type='sawtooth';chargeOsc.frequency.setValueAtTime(50,audioCtx.currentTime);chargeOsc.frequency.linearRampToValueAtTime(150,audioCtx.currentTime+3);
+    lfo.type='sine';lfo.frequency.value=4;lfoG.gain.value=20;lfo.connect(lfoG);lfoG.connect(chargeOsc.frequency);
+    flt.type='lowpass';flt.frequency.value=300;
+    chargeGain.gain.setValueAtTime(0,audioCtx.currentTime);chargeGain.gain.linearRampToValueAtTime(0.18,audioCtx.currentTime+1.2);
+    chargeOsc.connect(flt);flt.connect(chargeGain);chargeGain.connect(audioCtx.destination);
+    chargeOsc.start();lfo.start();
+  }catch(e){}
+}
+function stopChargeHum(){
+  try{
+    if(chargeOsc&&chargeGain){
+      chargeGain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.5);
+      setTimeout(()=>{try{chargeOsc.stop();chargeOsc=null;}catch(e){}},600);
+    }
+  }catch(e){}
+}
+
+function playCinematicAudioTimeline() {
+  initAudio();
+  const t = audioCtx.currentTime;
+  
+  let cOsc = audioCtx.createOscillator(); let cGain = audioCtx.createGain();
+  cOsc.type = 'square'; cOsc.frequency.setValueAtTime(40, t); cOsc.frequency.exponentialRampToValueAtTime(2500, t + 3.5);
+  cGain.gain.setValueAtTime(0, t); cGain.gain.linearRampToValueAtTime(0.4, t + 3.4); cGain.gain.linearRampToValueAtTime(0, t + 3.5);
+  cOsc.connect(cGain); cGain.connect(audioCtx.destination); cOsc.start(t); cOsc.stop(t + 3.5);
+
+  let bufSize = audioCtx.sampleRate * 3; let buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+  let data = buf.getChannelData(0); for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+  let noiseSrc = audioCtx.createBufferSource(); noiseSrc.buffer = buf;
+  let noiseGain = audioCtx.createGain(); let nFilter = audioCtx.createBiquadFilter(); nFilter.type = 'lowpass';
+  nFilter.frequency.setValueAtTime(1000, t + 3.5); nFilter.frequency.exponentialRampToValueAtTime(50, t + 5.5);
+  noiseGain.gain.setValueAtTime(0, t); noiseGain.gain.setValueAtTime(4.0, t + 3.5); noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 6.0);
+  noiseSrc.connect(nFilter); nFilter.connect(noiseGain); noiseGain.connect(audioCtx.destination); noiseSrc.start(t + 3.5);
+  
+  [261.63, 329.63, 392.00, 523.25].forEach((freq, idx) => {
+    let osc = audioCtx.createOscillator(); let g = audioCtx.createGain();
+    osc.type = 'sine'; osc.frequency.value = freq;
+    g.gain.setValueAtTime(0, t); g.gain.setTargetAtTime(0.15, t + 5.0 + (idx*0.1), 0.5); g.gain.exponentialRampToValueAtTime(0.01, t + 12.0);
+    osc.connect(g); g.connect(audioCtx.destination); osc.start(t); osc.stop(t + 12.0);
+  });
+}
+
+/* ── CHARGE BAR & BUTTON TREMBLE ── */
+function updateChargeBar(){
+  const name=document.getElementById('userName').value.trim();
+  const num=document.getElementById('nftNum').value.trim();
+  const hasBoth=name.length>0&&num.length>0,hasOne=name.length>0||num.length>0;
+  chargeLevel=hasBoth?2:hasOne?1:0;
+  const pct=chargeLevel===2?100:chargeLevel===1?50:0;
+  
+  const bar=document.getElementById('chargeBar');
+  const btn=document.querySelector('.btn-reveal');
+  
+  bar.style.width=pct+'%';bar.style.opacity=pct>0?'1':'0';
+  
+  if(hasBoth) {
+    startChargeHum();
+    if(btnTween) btnTween.kill();
+    btnTween = gsap.to(btn, { x: 3, y: 3, duration: 0.05, repeat: -1, yoyo: true, ease: "rough" });
+    gsap.to(btn, { boxShadow: '0 0 50px #ff00ff', duration: 0.5 });
+  } else {
+    stopChargeHum();
+    if(btnTween) btnTween.kill();
+    gsap.to(btn, { x: 0, y: 0, boxShadow: '0 0 25px var(--plasma)', duration: 0.5 });
+  }
+}
+function onInputKey(boxId){
+  initAudio();playKeyClick();
+  if(navigator.vibrate) navigator.vibrate(15);
+  const box=document.getElementById(boxId);
+  box.classList.remove('vibe');void box.offsetWidth;box.classList.add('vibe');
+  box.classList.add('charging');setTimeout(()=>box.classList.remove('charging'),500);
+  updateChargeBar();
+}
+
+/* ── HELIUS: MINT COUNT ── */
+async function fetchMintCount(){
+  try{
+    const res=await fetch(HELIUS_RPC,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({jsonrpc:'2.0',id:'egc-count',method:'searchAssets',
+        params:{grouping:["collection", COLLECTION_ID],compressed:true,page:1,limit:1}})});
+    const data=await res.json();
+    const total=data?.result?.total??'???';
+    document.getElementById('mint-counter').innerText=`⚡ ${total} / ${TOTAL_SUPPLY} GUARDIANS FORGED`;
+  }catch(e){
+    document.getElementById('mint-counter').innerText=`⚡ ??? / ${TOTAL_SUPPLY} GUARDIANS FORGED`;
+  }
+}
+
+/* ── HELIUS: LOAD MINTED SET ── */
+async function loadMintedSet(){
+  try{
+    let page=1;
+    while(true){
+      const res=await fetch(HELIUS_RPC,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({jsonrpc:'2.0',id:'egc-minted',method:'searchAssets',
+          params:{grouping:["collection", COLLECTION_ID],compressed:true,page:page,limit:1000}})});
+      const data=await res.json();
+      const items=data?.result?.items||[];
+      if(!items.length) break;
+      for(const item of items){
+        const attrs=item.content?.metadata?.attributes||[];
+        const edAttr=attrs.find(a=>a.trait_type==='Edition'||a.trait_type==='edition');
+        if(edAttr){mintedSet.add(parseInt(edAttr.value));}
+        else{const m=(item.content?.metadata?.name||'').match(/#(\d+)$/);if(m)mintedSet.add(parseInt(m[1]));}
+      }
+      if(items.length<1000) break;
+      page++;
+    }
+    mintedLoaded=true;
+  }catch(e){mintedLoaded=true;console.warn('loadMintedSet:',e);}
+}
+
+/* ── HELIUS: VERIFY OWNERSHIP (ANY NFT IN COLLECTION) ── */
+/* ── VERIFICA PROPRIETÀ ISTANTANEA ── */
+async function verifyOwnership(){
+  const wallet = document.getElementById('walletInput').value.trim();
+  const statusEl = document.getElementById('verifyStatus');
+  const badgeEl = document.getElementById('verifiedBadge');
+  const btn = document.getElementById('verifyBtn');
+  
+  if(!wallet || wallet.length < 32){
+    statusEl.className = 'status-err';
+    statusEl.innerText = '⚠ INSERISCI UN WALLET SOLANA VALIDO';
+    return;
+  }
+  
+  statusEl.className = 'status-check';
+  statusEl.innerText = '⟳ ACCESSO ISTANTANEO ALLA CHAIN...';
+  btn.disabled = true;
+  
+  try {
+    // Usiamo searchAssets filtrando per COLLECTION ID: traccia tutti i cNFT mintati
+    const res = await fetch(HELIUS_RPC, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 'egc-verify-fast',
+        method: 'searchAssets',
+        params: {
+          ownerAddress: wallet,
+          grouping: ["collection", COLLECTION_ID], 
+          compressed: true,
+          page: 1,
+          limit: 10
+        }
+      })
+    });
+
+    const data = await res.json();
+    const items = data?.result?.items || [];
+    
+    // Se Helius trova anche solo 1 NFT che appartiene alla collezione
+    if (items.length > 0) {
+      statusEl.className = 'status-ok';
+      statusEl.innerText = `✅ GUARDIAN RILEVATO NEL WALLET!`;
+      badgeEl.style.display = 'block';
+      unlockCertificate(); // Questo sblocca il tasto download
+    } else {
+      statusEl.className = 'status-err';
+      statusEl.innerText = `✗ NESSUN GUARDIAN TROVATO IN QUESTO WALLET`;
+    }
+  } catch (e) {
+    statusEl.className = 'status-err';
+    statusEl.innerText = '⚠ ERRORE DI RETE - RIPROVA';
+    console.error("Errore verifica:", e);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* ── UNLOCK CERT ── */
+function unlockCertificate(){
+  mintVerified=true;
+  const btn=document.getElementById('dlCertBtn');
+  btn.classList.add('btn-unlocked');btn.innerText='🏆 DOWNLOAD HOLO-CERTIFICATE';
+  spawnChainCells(20);
+}
+
+/* ── ALREADY MINTED ── */
+function showAlreadyMintedOverlay(n){
+  document.getElementById('mintedNum').innerText=`#${String(n).padStart(3,'0')}`;
+  document.getElementById('mintedOverlay').classList.add('show');
+}
+function closeMintedOverlay(){document.getElementById('mintedOverlay').classList.remove('show');}
+
+/* ── CHAIN CELLS ── */
+function spawnChainCells(amount){
+  for(let i=0;i<amount;i++){
+    const cell=document.createElement('div');cell.className='chain-cell';
+    const dur=3+Math.random()*4,del=Math.random()*1.5;
+    cell.style.left=Math.random()*100+'vw';
+    cell.style.animationDuration=dur+'s';cell.style.animationDelay=del+'s';
+    document.body.appendChild(cell);
+    setTimeout(()=>cell.remove(),(dur+del)*1000+200);
+  }
+}
+
+/* ── PHRASES ── */
+const PHRASES={
+  common:[
+    n=>`Neural link established. I am Guardian #${n}, ready to serve. My element pulses with quiet strength, Commander ${commanderName}.`,
+    n=>`Awakening sequence complete. Guardian #${n} online. The blockchain remembers my birth — do you feel it, ${commanderName}?`,
+    n=>`I have waited in the digital void. Now I breathe. Guardian #${n} at your command, ${commanderName}.`
+  ],
+  uncommon:[
+    n=>`Something stirs within me… power beyond ordinary circuits. Guardian #${n}. Can you feel our connection, ${commanderName}?`,
+    n=>`My energy signature is unique — uncommon among hundreds. I chose you, ${commanderName}. Guardian #${n} awakens.`
+  ],
+  legendary:[
+    n=>`THE CHAIN TREMBLES! I, Guardian #${n}, LEGENDARY, have finally awakened! This moment was written in the blocks, Commander ${commanderName}!`,
+    n=>`IMPOSSIBLE POWER SURGES THROUGH ME! Guardian #${n} LEGENDARY rises! The world will never be the same, ${commanderName}!`
+  ],
+};
+
+/* ── THREE.JS RENDERER & GLSL SHADERS ── */
+function initWebGL(imgElement, colorHex) {
+  const container = document.getElementById('webgl-container');
+  container.style.opacity = 1;
+  container.innerHTML = '';
+  
+  glRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  glRenderer.setSize(window.innerWidth, window.innerHeight);
+  glRenderer.setPixelRatio(window.devicePixelRatio);
+  container.appendChild(glRenderer.domElement);
+
+  glScene = new THREE.Scene();
+  glCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+  glCamera.position.z = 500;
+
+  const texture = new THREE.Texture(imgElement);
+  texture.needsUpdate = true;
+  
+  const hexToRgb = hex => { const res = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex); return res ? { r: parseInt(res[1], 16)/255, g: parseInt(res[2], 16)/255, b: parseInt(res[3], 16)/255 } : {r:0,g:1,b:1}; };
+  const rgb = hexToRgb(colorHex);
+
+  const shaderMat = new THREE.ShaderMaterial({
+    uniforms: {
+      uTexture: { value: texture },
+      uTime: { value: 0 },
+      uProgress: { value: 0.0 },
+      uColor: { value: new THREE.Vector3(rgb.r, rgb.g, rgb.b) },
+      uBreath: { value: 0.0 }
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      uniform float uTime; uniform float uBreath;
+      void main() { vUv = uv; vec3 pos = position; pos.x *= 1.0 + (sin(uTime * 2.0) * uBreath); pos.y *= 1.0 + (sin(uTime * 2.0) * uBreath); gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0); }
+    `,
+    fragmentShader: `
+      varying vec2 vUv;
+      uniform sampler2D uTexture; uniform float uProgress; uniform float uTime; uniform vec3 uColor;
+      vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+      float snoise(vec2 v){
+        const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+        vec2 i  = floor(v + dot(v, C.yy) ); vec2 x0 = v -   i + dot(i, C.xx);
+        vec2 i1; i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0); vec4 x12 = x0.xyxy + C.xxzz; x12.xy -= i1; i = mod(i, 289.0);
+        vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
+        vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0); m = m*m; m = m*m;
+        vec3 x = 2.0 * fract(p * C.www) - 1.0; vec3 h = abs(x) - 0.5; vec3 ox = floor(x + 0.5); vec3 a0 = x - ox;
+        m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+        vec3 g; g.x  = a0.x  * x0.x  + h.x  * x0.y; g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+        return 130.0 * dot(m, g);
+      }
+      void main() {
+        vec4 texColor = texture2D(uTexture, vUv);
+        float n = snoise(vUv * 5.0 + uTime * 0.5);
+        float threshold = uProgress * 2.0 - 0.5; 
+        if(n < threshold) { gl_FragColor = texColor; } 
+        else if(n < threshold + 0.15) { float intensity = 1.0 - ((n - threshold) * 6.66); gl_FragColor = vec4(uColor * intensity * 3.0, 1.0); } 
+        else { float darkNoise = snoise(vUv * 15.0 - uTime); vec3 veilColor = mix(vec3(0.05, 0.05, 0.08), uColor * 0.2, darkNoise * 0.5 + 0.5); gl_FragColor = vec4(veilColor, 1.0); }
+      }
+    `,
+    transparent: true
+  });
+
+  cardMesh = new THREE.Mesh(new THREE.PlaneGeometry(280, 280), shaderMat);
+  glScene.add(cardMesh);
+  
+  glUniforms = shaderUniforms = shaderMat.uniforms;
+
+  const pGeo = new THREE.BufferGeometry(); const pCount = 1500; const pPos = new Float32Array(pCount * 3); const pVel = [];
+  for(let i=0; i<pCount; i++){ pPos[i*3] = (Math.random()-0.5)*100; pPos[i*3+1] = (Math.random()-0.5)*100; pPos[i*3+2] = (Math.random()-0.5)*10; pVel.push({x:(Math.random()-0.5)*8,y:(Math.random()-0.5)*8,z:Math.random()*15}); }
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  const pMat = new THREE.PointsMaterial({ color: colorHex, size: 4, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
+  particleSys = new THREE.Points(pGeo, pMat);
+  particleSys.userData.velocities = pVel;
+  glScene.add(particleSys);
+
+  const clock = new THREE.Clock();
+  function renderGL() {
+    requestAnimationFrame(renderGL);
+    glUniforms.uTime.value += clock.getDelta();
+    if(pMat.opacity > 0) {
+      const pos = particleSys.geometry.attributes.position.array;
+      for(let i=0; i<pCount; i++){ pos[i*3] += particleSys.userData.velocities[i].x; pos[i*3+1] += particleSys.userData.velocities[i].y; pos[i*3+2] += particleSys.userData.velocities[i].z; }
+      particleSys.geometry.attributes.position.needsUpdate = true;
+    }
+    glRenderer.render(glScene, glCamera);
+  }
+  renderGL();
+}
+
+/* ── CINEMATIC AWAKENING WITH GSAP & WEBGL ── */
+async function triggerAwakening(){
+  initAudio();
+  commanderName=document.getElementById('userName').value.trim()||'Commander';
+  currentId=parseInt(document.getElementById('nftNum').value);
+  if(!currentId||currentId<1||currentId>375){alert('SYSTEM ERROR: Enter a Guardian ID between 1 and 375.');return;}
+  if(mintedLoaded&&mintedSet.has(currentId)){showAlreadyMintedOverlay(currentId);return;}
+  mintVerified=false;
+  
+  currentRarity=currentId<=242?'common':currentId<=342?'uncommon':'legendary';
+  const colors={common:'#00f0ff',uncommon:'#e040fb',legendary:'#ffd700'};
+  const col=colors[currentRarity];
+  
+  const img = document.getElementById('cardImg');
+  img.crossOrigin = "anonymous";
+  img.onload = () => {
+    initWebGL(img, col);
+    startGSAPReveal();
+  };
+  img.src = `${IMG_BASE}/${currentId-1}`;
+}
+
+function startGSAPReveal() {
+  stopChargeHum();
+  playCinematicAudioTimeline(); 
+
+  const app = document.getElementById('app');
+  const flash = document.getElementById('explosionFlash');
+  const blackout = document.getElementById('blackout');
+  
+  const tl = gsap.timeline();
+  
+  app.classList.add('cinematic-shake');
+  
+  tl.to(cardMesh.position, { z: 200, duration: 3.5, ease: "power2.in" }, 0);
+  tl.to(cardMesh.rotation, { z: 0.1, y: 0.2, duration: 3.5, ease: "power2.in" }, 0);
+  
+  tl.add(() => {
+    app.classList.remove('cinematic-shake');
+    flash.style.display='block'; flash.style.opacity='1';
+    
+    gsap.to(glUniforms.uProgress, { value: 1.0, duration: 1.5, ease: "power2.inOut" });
+    gsap.to(particleSys.material, { opacity: 1, duration: 0.1 });
+    gsap.to(particleSys.material, { opacity: 0, duration: 1.5, delay: 0.2 });
+
+    document.getElementById('setup-ui').style.display='none';
+    document.getElementById('mainHeader').style.display='none';
+    document.getElementById('chargeBar').style.opacity='0';
+  }, 3.5);
+
+  tl.to(flash, { opacity: 0, duration: 1.0 }, 3.6);
+  tl.to(cardMesh.position, { z: 0, duration: 1.5, ease: "back.out(1.7)" }, 3.5);
+  tl.to(cardMesh.rotation, { z: 0, y: 0, duration: 1.5, ease: "power2.out" }, 3.5);
+
+  tl.add(() => {
+    flash.style.display='none';
+    document.body.classList.add('theme-gold');
+    
+    gsap.to(glUniforms.uBreath, { value: 0.02, duration: 2.0 });
+    
+    setTimeout(()=>{ showHTMLCard(); }, 1000);
+  }, 5.0);
+}
+
+function showHTMLCard(){
+  const n=currentId;
+  const colors={common:'#00f0ff',uncommon:'#e040fb',legendary:'#ffd700'};
+  const col=colors[currentRarity];
+  const card=document.getElementById('cardContainer');
+  card.style.setProperty('--ca',col);
+  
+  const badge=document.getElementById('badgeRarity');
+  badge.innerText=currentRarity.toUpperCase();badge.style.color=col;
+  const names={common:'GUARDIAN UNIT',uncommon:'ELITE GUARDIAN',legendary:'LEGENDARY GUARDIAN'};
+  
+  document.getElementById('gname').innerText=`${commanderName.toUpperCase()} — GUARDIAN #${n}`;
+  
+  const base=currentRarity==='legendary'?65:currentRarity==='uncommon'?40:20;
+  const range=currentRarity==='legendary'?34:39;
+  const seed=s=>{let r=Math.sin(s*9301+n*49297)*233280;r-=Math.floor(r);return Math.floor(r*range)+base;};
+  document.getElementById('atk').innerText=seed(1);
+  document.getElementById('def').innerText=seed(3);
+  document.getElementById('dao').innerText=currentRarity==='common'?1:currentRarity==='uncommon'?3:5;
+  
+  // Vecchio link MINT rimosso perché ora gestito da LaunchMyNFT embed
+  
+  document.getElementById('scene').style.display='block';
+  document.getElementById('cardBodyUI').style.opacity = 1;
+  document.getElementById('imgFrame').style.background = 'transparent';
+  document.getElementById('cardImg').style.opacity = 1; 
+  
+  document.getElementById('webgl-container').style.opacity = 0; 
+  
+  setTimeout(()=>document.getElementById('mintSection').style.display='block',800);
+  setTimeout(()=>document.getElementById('certSection').style.display='block',1000);
+  
+  const phrase=PHRASES[currentRarity][(n-1)%PHRASES[currentRarity].length](n);
+  document.getElementById('guardianSpeech').innerText=phrase;
+  document.getElementById('verifyStatus').innerText='';
+  document.getElementById('walletInput').value='';
+  document.getElementById('verifiedBadge').style.display='none';
+  const dlBtn=document.getElementById('dlCertBtn');
+  dlBtn.classList.remove('btn-unlocked');dlBtn.innerText='🔒 MINT TO UNLOCK';
+  
+  initHolo3D();speakGuardian(phrase);fetchMintCount();
+}
+
+/* ── SPEECH ── */
+function speakGuardian(phrase){
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const pitch=currentRarity==='legendary'?0.3:currentRarity==='uncommon'?0.6:0.85;
+  const rate=currentRarity==='legendary'?0.78:0.88;
+  const utt=new SpeechSynthesisUtterance(phrase);
+  utt.lang='en-US';utt.rate=rate;utt.pitch=pitch;utt.volume=1;
+  
+  const voices = window.speechSynthesis.getVoices();
+  let v = voices.find(x => x.name.includes('Male') || x.name.includes('UK English Male'));
+  if(v) utt.voice = v;
+
+  const imgFrame=document.getElementById('imgFrame');
+  utt.onstart=()=>imgFrame.classList.add('talking');
+  utt.onend=utt.onerror=()=>imgFrame.classList.remove('talking');
+  if(speechTO) clearTimeout(speechTO);
+  speechTO=setTimeout(()=>window.speechSynthesis.speak(utt),700);
+}
+
+/* ── 3D HOLO ── */
+function initHolo3D(){
+  const wrap=document.getElementById('cardWrap'),card=document.getElementById('cardContainer');
+  function applyTilt(cx,cy){
+    const rx=-(cy-window.innerHeight/2)/22,ry=(cx-window.innerWidth/2)/22;
+    wrap.style.transform=`rotateY(${ry}deg) rotateX(${rx}deg)`;
+    card.style.setProperty('--holo-angle',`${135+ry}deg`);
+  }
+  document.addEventListener('mousemove',e=>applyTilt(e.clientX,e.clientY));
+  document.addEventListener('touchmove',e=>{const t=e.touches[0];applyTilt(t.clientX,t.clientY);},{passive:true});
+  document.addEventListener('touchend',()=>{wrap.style.transform='rotateY(0deg) rotateX(0deg)';});
+}
+
+/* ── CERTIFICATE ── */
+function renderCertificate(canvasId){
+  const canvas=document.getElementById(canvasId);if(!canvas)return;
+  const ctx=canvas.getContext('2d'),W=800,H=1100;
+  const col=currentRarity==='common'?'#00f0ff':currentRarity==='uncommon'?'#e040fb':'#ffd700';
+  ctx.fillStyle='#050505';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle=col;ctx.lineWidth=12;ctx.shadowColor=col;ctx.shadowBlur=30;ctx.strokeRect(18,18,W-36,H-36);
+  ctx.lineWidth=2;ctx.strokeRect(30,30,W-60,H-60);ctx.shadowBlur=0;
+  [[18,18],[W-18,18],[18,H-18],[W-18,H-18]].forEach(([x,y])=>{ctx.fillStyle=col;ctx.fillRect(x-6,y-6,12,12);});
+  ctx.font='bold 36px Orbitron';ctx.fillStyle=col;ctx.textAlign='center';ctx.shadowColor=col;ctx.shadowBlur=20;ctx.fillText('GUARDIAN CERTIFICATE',W/2,108);
+  ctx.font='13px monospace';ctx.fillStyle='rgba(255,255,255,0.45)';ctx.shadowBlur=0;ctx.fillText('ELEMENTAL GUARDIANS CLUB · SOLANA cNFT',W/2,138);
+  ctx.font='22px Orbitron';ctx.fillStyle='#fff';ctx.fillText(`COMMANDER: ${commanderName.toUpperCase()}`,W/2,200);
+  ctx.font='15px monospace';ctx.fillStyle=col;ctx.fillText(`UNIT: #${currentId} · RARITY: ${currentRarity.toUpperCase()}`,W/2,235);
+  const img=document.getElementById('cardImg');
+  if(img&&img.complete&&img.naturalWidth>0){
+    ctx.save();ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(150,275,500,500,16); else ctx.rect(150,275,500,500);
+    ctx.clip();ctx.drawImage(img,150,275,500,500);ctx.restore();
+    ctx.strokeStyle=col;ctx.lineWidth=4;ctx.shadowColor=col;ctx.shadowBlur=20;ctx.strokeRect(150,275,500,500);ctx.shadowBlur=0;
+  }
+  const labels=['ATK','DEF','DAO'],vals=[document.getElementById('atk').innerText,document.getElementById('def').innerText,document.getElementById('dao').innerText];
+  labels.forEach((lb,i)=>{
+    const x=200+i*200;
+    ctx.fillStyle='rgba(255,255,255,0.05)';ctx.fillRect(x-58,820-28,116,68);
+    ctx.strokeStyle=col;ctx.lineWidth=1;ctx.strokeRect(x-58,820-28,116,68);
+    ctx.font='10px monospace';ctx.fillStyle='rgba(255,255,255,0.5)';ctx.fillText(lb,x,820-4);
+    ctx.font='bold 28px Orbitron';ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=10;
+    ctx.fillText(vals[i],x,820+30);ctx.shadowBlur=0;
+  });
+  ctx.font='13px Orbitron';ctx.fillStyle='#00ff88';ctx.shadowColor='#00ff88';ctx.shadowBlur=15;ctx.fillText('✓ VERIFIED ON SOLANA BLOCKCHAIN',W/2,940);ctx.shadowBlur=0;
+  ctx.font='16px Orbitron';ctx.fillStyle=col;ctx.fillText('OFFICIAL EGC WEB3 PROTOCOL',W/2,1000);
+  ctx.font='11px monospace';ctx.fillStyle='rgba(255,255,255,0.3)';ctx.fillText(`egc.io · ${new Date().toISOString().split('T')[0]}`,W/2,1048);
+}
+function showPreview(){document.getElementById('previewModal').style.display='flex';renderCertificate('previewCanvas');}
+function downloadCert(){
+  if(!mintVerified){alert('ACCESS DENIED: Verify your Solana wallet first to unlock the official certificate.');return;}
+  const canvas=document.createElement('canvas');canvas.width=800;canvas.height=1100;canvas.id='tempCert';document.body.appendChild(canvas);renderCertificate('tempCert');
+  setTimeout(()=>{const link=document.createElement('a');link.download=`EGC_Guardian_${currentId}_Certificate.png`;link.href=canvas.toDataURL('image/png');link.click();canvas.remove();},250);
+}
+
+/* ── INPUT EVENTS ── */
+document.getElementById('userName').addEventListener('input',e=>{
+  onInputKey('boxName');
+  const msg=document.getElementById('dynamicMsg');
+  msg.style.color='#00ffff';
+  msg.innerText=e.target.value.length>0?'▸ NEURAL LINK INITIALIZING...':'';
+});
+document.getElementById('nftNum').addEventListener('input',e=>{
+  onInputKey('boxNum');
+  const v=parseInt(e.target.value),msg=document.getElementById('dynamicMsg');
+  if(!v||v<1||v>375){msg.style.color='#ff4444';msg.innerText='⚠ ID MUST BE BETWEEN 1 AND 375';}
+  else{msg.style.color='#00ffff';msg.innerText=`▸ GUARDIAN ID ${v} SELECTED`;}
+});
+
+/* ── PARTICLES (BLOCKCHAIN THEME) ── */
+const pCanvas=document.getElementById('particleCanvas'),pCtx=pCanvas.getContext('2d');
+const CHAIN_CHARS=['0','1','A','F','DAO','⚡','◈','⬡','⬢','NFT','SOL','#','∞','Ξ','{}'];
+let particles=[],hexagons=[];
+
+class Particle{
+  constructor(){this.reset(true);}
+  reset(init){
+    this.x=Math.random()*pCanvas.width;
+    this.y=init?Math.random()*pCanvas.height:pCanvas.height+20;
+    this.speed=Math.random()*0.8+0.2;this.size=Math.random()*11+8;
+    this.char=CHAIN_CHARS[Math.floor(Math.random()*CHAIN_CHARS.length)];
+    this.op=Math.random()*0.35+0.05;this.drift=(Math.random()-0.5)*0.3;
+  }
+  update(){this.y-=this.speed;this.x+=this.drift;if(this.y<-30)this.reset(false);}
+  draw(isGold){
+    pCtx.font=`${this.size}px 'Share Tech Mono'`;
+    pCtx.fillStyle=isGold?`rgba(255,215,0,${this.op})`:`rgba(0,255,255,${this.op})`;
+    pCtx.fillText(this.char,this.x,this.y);
+  }
+}
+class Hexagon{
+  constructor(){this.reset(true);}
+  reset(init){
+    this.x=Math.random()*pCanvas.width;this.y=init?Math.random()*pCanvas.height:pCanvas.height+50;
+    this.r=Math.random()*18+6;this.speed=Math.random()*0.4+0.1;
+    this.rot=Math.random()*Math.PI*2;this.rotS=(Math.random()-0.5)*0.02;
+    this.op=Math.random()*0.12+0.02;
+  }
+  update(){this.y-=this.speed;this.rot+=this.rotS;if(this.y<-60)this.reset(false);}
+  draw(isGold){
+    pCtx.save();pCtx.translate(this.x,this.y);pCtx.rotate(this.rot);
+    pCtx.beginPath();
+    for(let i=0;i<6;i++){const a=(Math.PI/3)*i;i===0?pCtx.moveTo(Math.cos(a)*this.r,Math.sin(a)*this.r):pCtx.lineTo(Math.cos(a)*this.r,Math.sin(a)*this.r);}
+    pCtx.closePath();
+    pCtx.strokeStyle=isGold?`rgba(255,180,0,${this.op})`:`rgba(160,0,255,${this.op})`;
+    pCtx.lineWidth=1;pCtx.stroke();pCtx.restore();
+  }
+}
+function initParticles(){
+  pCanvas.width=window.innerWidth;pCanvas.height=window.innerHeight;
+  particles=Array.from({length:80},()=>new Particle());
+  hexagons=Array.from({length:25},()=>new Hexagon());
+}
+function animateParticles(){
+  pCtx.clearRect(0,0,pCanvas.width,pCanvas.height);
+  const isGold=document.body.classList.contains('theme-gold');
+  hexagons.forEach(h=>{h.update();h.draw(isGold);});
+  particles.forEach(p=>{p.update();p.draw(isGold);});
+  requestAnimationFrame(animateParticles);
+}
+window.addEventListener('resize',initParticles);
+initParticles();animateParticles();
+
+/* ── BOOT ── */
+fetchMintCount();loadMintedSet();setInterval(fetchMintCount,60_000);
+if(window.speechSynthesis) window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();
+</script>
+</body>
+</html>
